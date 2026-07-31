@@ -1,0 +1,13 @@
+{
+  "name": "Fash Studio",
+  "short_name": "Fash",
+  "description": "Try-on & video TikTok cho local brand Việt",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0b0a",
+  "theme_color": "#0c0b0a",
+  "lang": "vi",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

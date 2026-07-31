@@ -1,0 +1,13 @@
+# Fash Studio — website SEO
+User-agent: *
+Allow: /
+Allow: /blog
+Allow: /studio
+Allow: /register
+
+# App shells / auth — thin or private
+Disallow: /dashboard
+Disallow: /login
+Disallow: /api/
+
+Sitemap: https://fash.studio/sitemap.xml
