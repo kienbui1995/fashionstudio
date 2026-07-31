@@ -6,6 +6,7 @@ import {
   GROK_PROVIDERS,
   authClient,
   authEnabled,
+  getBearerToken,
   persistSessionToken,
   signIn,
 } from "@/lib/auth/client";
@@ -17,12 +18,26 @@ export const Route = createFileRoute("/login")({
     seoHead({
       title: "Đăng nhập",
       description:
-        "Đăng nhập Fash Studio để quản lý gian hàng local brand và studio try-on.",
+        "Đăng nhập Fash Studio để quản lý gian hàng local brand và studio thử đồ.",
       path: "/login",
       noindex: true,
     }),
   component: LoginPage,
 });
+
+function mapEmailError(message: string | undefined): string {
+  const m = (message || "").toLowerCase();
+  if (m.includes("invalid") && (m.includes("password") || m.includes("email") || m.includes("credential"))) {
+    return "Email hoặc mật khẩu không đúng";
+  }
+  if (m.includes("origin") || m.includes("forbidden")) {
+    return "Domain chưa được phép (Invalid origin). Cần redeploy / set BETTER_AUTH_URL.";
+  }
+  if (m.includes("user not found") || m.includes("not found")) {
+    return "Chưa có tài khoản với email này — hãy đăng ký trước";
+  }
+  return message || "Đăng nhập thất bại";
+}
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -39,22 +54,26 @@ function LoginPage() {
     setLoading(true);
     try {
       const { data, error } = await authClient.signIn.email({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
-      if (error) throw new Error(error.message || "Đăng nhập thất bại");
-      // Preview iframe: cookie Secure không gắn được → dùng bearer token
-      const token =
+      if (error) throw new Error(mapEmailError(error.message));
+
+      // Prefer full token from onSuccess header; fallback body token
+      const bodyToken =
         (data as { token?: string } | null | undefined)?.token ?? null;
-      if (token) persistSessionToken(token);
-      try {
-        await authClient.getSession();
-      } catch {
-        /* session hook will refresh */
+      if (!getBearerToken() && bodyToken) persistSessionToken(bodyToken);
+
+      // Confirm session before leaving the page
+      const session = await authClient.getSession();
+      if (!session.data?.user && !getBearerToken() && !bodyToken) {
+        throw new Error(
+          "Đăng nhập xong nhưng chưa giữ được phiên (cookie). Thử lại hoặc dùng trình duyệt khác.",
+        );
       }
+
       toast.success("Đăng nhập thành công");
-      // Full navigation so session + dashboard hydrate cleanly in preview
-      window.location.href = "/dashboard";
+      window.location.assign("/dashboard");
     } catch (err) {
       toast.error((err as Error).message || "Đăng nhập thất bại");
     } finally {
@@ -69,7 +88,7 @@ function LoginPage() {
       </Link>
       <h1 className="font-display text-2xl font-semibold">Đăng nhập</h1>
       <p className="mt-2 text-sm text-fg-muted">
-        Vào bảng điều khiển gian hàng & studio try-on.
+        Vào bảng điều khiển gian hàng & studio thử đồ.
       </p>
 
       {authEnabled && emailAndPasswordEnabled && (
@@ -118,10 +137,14 @@ function LoginPage() {
                 void signIn(p.providerId, {
                   callbackURL: "/dashboard",
                   errorCallbackURL: "/login",
-                }).catch((err) => {
-                  toast.error((err as Error).message || "Đăng nhập mạng xã hội lỗi");
-                  setOauthLoading(null);
-                });
+                })
+                  .catch((err) => {
+                    toast.error(
+                      (err as Error).message ||
+                        "Google/X lỗi — hãy dùng email/mật khẩu",
+                    );
+                  })
+                  .finally(() => setOauthLoading(null));
               }}
             >
               {oauthLoading === p.providerId
@@ -129,6 +152,11 @@ function LoginPage() {
                 : `Dùng ${p.label}`}
             </Button>
           ))}
+          <p className="pt-1 text-center text-[11px] leading-relaxed text-fg-subtle">
+            Google/X cần OAuth trên domain production. Nếu lỗi, dùng{" "}
+            <strong className="text-fg-muted">email + mật khẩu</strong> (ổn định
+            hơn).
+          </p>
         </div>
       )}
 

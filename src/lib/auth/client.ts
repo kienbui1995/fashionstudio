@@ -170,7 +170,20 @@ export async function signIn(
     callbackURL,
     errorCallbackURL,
   });
-  if (error) throw new Error(error.message ?? "Đăng nhập thất bại");
+  if (error) {
+    const msg = error.message ?? "";
+    if (/origin|csrf|forbidden/i.test(msg)) {
+      throw new Error(
+        "Domain chưa được phép đăng nhập (Invalid origin). Thử email/mật khẩu hoặc set BETTER_AUTH_URL.",
+      );
+    }
+    if (/redirect|client|oauth|invalid/i.test(msg) || /sign.?in failed/i.test(msg)) {
+      throw new Error(
+        "Google/X chưa cấu hình cho domain này. Hãy dùng email/mật khẩu, hoặc set GROK_AUTH_CLIENT_ID trên server.",
+      );
+    }
+    throw new Error(msg || "Đăng nhập thất bại");
+  }
   if (data?.url) window.location.href = data.url;
 }
 

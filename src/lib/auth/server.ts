@@ -180,8 +180,10 @@ const baseURL = explicitBaseURL ?? {
   ],
   // `auto` → trust both http:// and https:// expansions of allowedHosts
   // (preview is https; local dev is http).
+  // IMPORTANT: fallback must be loopback — using a production host here makes
+  // OAuth redirect_uri point at the wrong domain (Sign-in failed).
   protocol: "auto" as const,
-  fallback: "https://fashionstudio.pmai.space",
+  fallback: "http://localhost:8080",
 };
 
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
