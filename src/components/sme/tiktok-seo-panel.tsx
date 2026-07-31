@@ -47,7 +47,7 @@ export function TikTokSeoPanel({
   async function copy(label: string, text: string) {
     const ok = await copyText(text);
     if (ok) toast.success(`Đã copy ${label}`);
-    else toast.error("Không copy được");
+    else toast.error("Không sao chép được");
   }
 
   return (
@@ -63,12 +63,12 @@ export function TikTokSeoPanel({
           <Hash className="size-4 text-accent" />
           <h3 className="text-sm font-medium">TikTok SEO</h3>
         </div>
-        <Badge variant="accent">Score {pack.score}</Badge>
+        <Badge variant="accent">Điểm {pack.score}</Badge>
       </div>
 
       {!compact && (
         <label className="mt-3 block text-xs text-fg-muted">
-          Keywords thêm
+          Từ khóa thêm
           <input
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
@@ -77,7 +77,7 @@ export function TikTokSeoPanel({
         </label>
       )}
 
-      <p className="mt-3 text-xs font-medium text-fg-muted">Primary keyword</p>
+      <p className="mt-3 text-xs font-medium text-fg-muted">Từ khóa chính</p>
       <p className="mt-1 text-sm font-medium text-accent">{pack.primaryKeyword}</p>
 
       <p className="mt-3 text-xs font-medium text-fg-muted">Caption</p>

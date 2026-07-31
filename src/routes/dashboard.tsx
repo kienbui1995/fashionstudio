@@ -17,7 +17,7 @@ import { seoHead } from "@/lib/seo";
 export const Route = createFileRoute("/dashboard")({
   head: () =>
     seoHead({
-      title: "Dashboard gian hàng",
+      title: "Bảng điều khiển gian hàng",
       description: "Bảng điều khiển gian hàng Fash Studio.",
       path: "/dashboard",
       noindex: true,
@@ -60,17 +60,17 @@ function DashboardPage() {
         </Link>
         <div className="flex items-center gap-3">
           <Button asChild size="sm">
-            <Link to="/studio">Mở Studio</Link>
+            <Link to="/studio">Mở studio</Link>
           </Button>
           <UserButton />
         </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="font-display text-2xl font-semibold">Dashboard gian hàng</h1>
+        <h1 className="font-display text-2xl font-semibold">Bảng điều khiển gian hàng</h1>
         <p className="mt-2 text-sm text-fg-muted">
           Xin chào {user.displayName || user.primaryEmail || "bạn"}. Quản lý shop
-          local (lưu trên thiết bị — không cần DB).
+          trên thiết bị này (lưu local, chưa cần máy chủ).
         </p>
 
         <div className="mt-8 flex flex-col gap-2 sm:flex-row">
@@ -81,7 +81,7 @@ function DashboardPage() {
             className="flex-1 rounded-[var(--radius-md)] border border-border bg-bg-elevated px-3 py-2 text-sm"
           />
           <Button type="button" onClick={createShop}>
-            <Plus className="size-4" /> Tạo shop
+            <Plus className="size-4" /> Tạo gian hàng
           </Button>
         </div>
 
@@ -104,16 +104,16 @@ function DashboardPage() {
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <Badge variant="accent">{shop.role}</Badge>
                     {canRole(shop.role, "editor") && (
-                      <Badge variant="outline">Có thể xuất look</Badge>
+                      <Badge variant="outline">Xuất look</Badge>
                     )}
                     {canRole(shop.role, "admin") && (
-                      <Badge variant="outline">Quản trị team</Badge>
+                      <Badge variant="outline">Quản trị đội nhóm</Badge>
                     )}
                   </div>
                 </div>
               </div>
               <Button asChild size="sm" variant="secondary">
-                <Link to="/studio">Vào Studio</Link>
+                <Link to="/studio">Vào studio</Link>
               </Button>
             </li>
           ))}

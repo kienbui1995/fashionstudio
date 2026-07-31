@@ -36,7 +36,7 @@ export type TikTokVideoPreset = {
 export const TIKTOK_VIDEO_PRESETS: TikTokVideoPreset[] = [
   {
     id: "shop-hook",
-    name: "Shop hook 3s",
+    name: "Hook giỏ hàng 3s",
     description: "Hook sản phẩm 3s đầu, CTA giỏ vàng, 12s tổng.",
     durationSec: 12,
     width: 1080,
@@ -60,7 +60,7 @@ export const TIKTOK_VIDEO_PRESETS: TikTokVideoPreset[] = [
   },
   {
     id: "ugc-tryon",
-    name: "UGC try-on",
+    name: "UGC thử đồ",
     description: "Cảm giác khách thử đồ, zoom nhẹ, 10s.",
     durationSec: 10,
     width: 1080,
@@ -72,7 +72,7 @@ export const TIKTOK_VIDEO_PRESETS: TikTokVideoPreset[] = [
   },
   {
     id: "flash-sale",
-    name: "Flash sale",
+    name: "Flash sale chốt đơn",
     description: "Nhịp nhanh, pan-up, 8s chốt đơn.",
     durationSec: 8,
     width: 1080,

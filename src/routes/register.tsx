@@ -6,6 +6,7 @@ import {
   GROK_PROVIDERS,
   authClient,
   authEnabled,
+  persistSessionToken,
   signIn,
 } from "@/lib/auth/client";
 import { emailAndPasswordEnabled } from "@/lib/auth/email-password";
@@ -35,21 +36,32 @@ function RegisterPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!emailAndPasswordEnabled) {
-      toast.error("Email/password chưa bật");
+      toast.error("Chưa bật đăng ký email");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Mật khẩu tối thiểu 8 ký tự");
       return;
     }
     setLoading(true);
     try {
-      const { error } = await authClient.signUp.email({
+      const { data, error } = await authClient.signUp.email({
         name: name.trim() || "Chủ shop",
         email: email.trim(),
         password,
-        callbackURL: "/dashboard",
       });
       if (error) throw new Error(error.message || "Đăng ký thất bại");
+      const token =
+        (data as { token?: string } | null | undefined)?.token ?? null;
+      if (token) persistSessionToken(token);
+      try {
+        await authClient.getSession();
+      } catch {
+        /* ignore */
+      }
       if (shopName.trim()) createShopLocal(shopName.trim());
       toast.success("Tạo tài khoản thành công");
-      await navigate({ to: "/dashboard" });
+      window.location.href = "/dashboard";
     } catch (err) {
       toast.error((err as Error).message || "Đăng ký thất bại");
     } finally {
@@ -119,7 +131,7 @@ function RegisterPage() {
 
       {authEnabled && (
         <div className="mt-6 space-y-2">
-          <p className="text-center text-xs text-fg-subtle">hoặc đăng ký nhanh</p>
+          <p className="text-center text-xs text-fg-subtle">hoặc đăng ký bằng</p>
           {GROK_PROVIDERS.map((p) => (
             <Button
               key={p.providerId}
@@ -133,7 +145,7 @@ function RegisterPage() {
                 }).catch((err) => toast.error((err as Error).message))
               }
             >
-              Tiếp tục với {p.label}
+              Dùng {p.label}
             </Button>
           ))}
         </div>
@@ -141,7 +153,7 @@ function RegisterPage() {
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Button asChild variant="secondary">
-          <Link to="/studio">Vào Studio ngay</Link>
+          <Link to="/studio">Vào studio ngay</Link>
         </Button>
       </div>
 

@@ -52,15 +52,15 @@ function HomePage() {
             <nav className="hidden items-center gap-6 text-sm text-fg-muted md:flex" aria-label="Chính">
               <a href="#tinh-nang" className="hover:text-fg">Tính năng</a>
               <a href="#cho-ai" className="hover:text-fg">Cho ai</a>
-              <a href="#faq" className="hover:text-fg">FAQ</a>
-              <Link to="/blog" className="hover:text-fg">Blog SEO</Link>
+              <a href="#faq" className="hover:text-fg">Hỏi đáp</a>
+              <Link to="/blog" className="hover:text-fg">Blog</Link>
             </nav>
             <div className="flex items-center gap-2">
               <Button asChild variant="ghost" size="sm">
                 <Link to="/login">Đăng nhập</Link>
               </Button>
               <Button asChild size="sm">
-                <Link to="/studio">Vào Studio</Link>
+                <Link to="/studio">Vào studio</Link>
               </Button>
             </div>
           </div>
@@ -172,7 +172,7 @@ function HomePage() {
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <h2 className="font-display text-3xl font-semibold">Blog hướng dẫn</h2>
-                <p className="mt-2 text-fg-muted">Nội dung SEO giúp brand học và Google index.</p>
+                <p className="mt-2 text-fg-muted">Bài viết giúp brand học cách làm nội dung và được tìm thấy trên Google.</p>
               </div>
               <Button asChild variant="outline" size="sm">
                 <Link to="/blog">Xem tất cả</Link>
@@ -227,9 +227,9 @@ function HomePage() {
           </section>
 
           <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6">
-            <h2 className="font-display text-3xl font-semibold">Bắt đầu free trong Studio</h2>
+            <h2 className="font-display text-3xl font-semibold">Bắt đầu miễn phí trong studio</h2>
             <p className="mx-auto mt-3 max-w-lg text-fg-muted">
-              Không cần cài app — mở trình duyệt, upload sản phẩm, ra look + video.
+              Không cần cài app — mở trình duyệt, tải sản phẩm, ra look + video.
             </p>
             <Button asChild size="lg" className="mt-8">
               <Link to="/studio">Mở Fash Studio</Link>
@@ -247,7 +247,7 @@ function HomePage() {
               <Link to="/studio" className="hover:text-fg">Studio</Link>
               <Link to="/blog" className="hover:text-fg">Blog</Link>
               <Link to="/register" className="hover:text-fg">Đăng ký</Link>
-              <a href="/sitemap.xml" className="hover:text-fg">Sitemap</a>
+              <a href="/sitemap.xml" className="hover:text-fg">Sơ đồ trang</a>
               <a href="/robots.txt" className="hover:text-fg">Robots</a>
             </nav>
           </div>

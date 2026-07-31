@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   GROK_PROVIDERS,
   authClient,
   authEnabled,
+  persistSessionToken,
   signIn,
 } from "@/lib/auth/client";
 import { emailAndPasswordEnabled } from "@/lib/auth/email-password";
@@ -24,7 +25,6 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,19 +33,28 @@ function LoginPage() {
   async function onEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!emailAndPasswordEnabled) {
-      toast.error("Email/password chưa bật");
+      toast.error("Chưa bật đăng nhập email");
       return;
     }
     setLoading(true);
     try {
-      const { error } = await authClient.signIn.email({
+      const { data, error } = await authClient.signIn.email({
         email: email.trim(),
         password,
-        callbackURL: "/dashboard",
       });
       if (error) throw new Error(error.message || "Đăng nhập thất bại");
+      // Preview iframe: cookie Secure không gắn được → dùng bearer token
+      const token =
+        (data as { token?: string } | null | undefined)?.token ?? null;
+      if (token) persistSessionToken(token);
+      try {
+        await authClient.getSession();
+      } catch {
+        /* session hook will refresh */
+      }
       toast.success("Đăng nhập thành công");
-      await navigate({ to: "/dashboard" });
+      // Full navigation so session + dashboard hydrate cleanly in preview
+      window.location.href = "/dashboard";
     } catch (err) {
       toast.error((err as Error).message || "Đăng nhập thất bại");
     } finally {
@@ -60,7 +69,7 @@ function LoginPage() {
       </Link>
       <h1 className="font-display text-2xl font-semibold">Đăng nhập</h1>
       <p className="mt-2 text-sm text-fg-muted">
-        Vào dashboard gian hàng & studio try-on.
+        Vào bảng điều khiển gian hàng & studio try-on.
       </p>
 
       {authEnabled && emailAndPasswordEnabled && (
@@ -89,14 +98,14 @@ function LoginPage() {
             />
           </label>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Đang đăng nhập…" : "Đăng nhập email"}
+            {loading ? "Đang đăng nhập…" : "Đăng nhập bằng email"}
           </Button>
         </form>
       )}
 
       {authEnabled && (
         <div className="mt-6 space-y-2">
-          <p className="text-center text-xs text-fg-subtle">hoặc tiếp tục với</p>
+          <p className="text-center text-xs text-fg-subtle">hoặc đăng nhập bằng</p>
           {GROK_PROVIDERS.map((p) => (
             <Button
               key={p.providerId}
@@ -110,14 +119,14 @@ function LoginPage() {
                   callbackURL: "/dashboard",
                   errorCallbackURL: "/login",
                 }).catch((err) => {
-                  toast.error((err as Error).message || "OAuth lỗi");
+                  toast.error((err as Error).message || "Đăng nhập mạng xã hội lỗi");
                   setOauthLoading(null);
                 });
               }}
             >
               {oauthLoading === p.providerId
                 ? "Đang mở…"
-                : `Tiếp tục với ${p.label}`}
+                : `Dùng ${p.label}`}
             </Button>
           ))}
         </div>
@@ -125,9 +134,9 @@ function LoginPage() {
 
       {!authEnabled && (
         <p className="mt-6 text-sm text-fg-muted">
-          Auth đang tắt — dùng dev user.{" "}
+          Auth đang tắt — dùng tài khoản dev.{" "}
           <Link to="/dashboard" className="text-accent">
-            Vào dashboard
+            Vào bảng điều khiển
           </Link>
         </p>
       )}

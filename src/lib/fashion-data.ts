@@ -136,7 +136,7 @@ export const VN_SCENES: Scene[] = [
   },
   {
     id: "neon-night",
-    name: "Neon night",
+    name: "Phố neon đêm",
     kind: "photo",
     image: "/images/scene-neon-night.jpg",
     src: "/images/scene-neon-night.jpg",
@@ -145,7 +145,7 @@ export const VN_SCENES: Scene[] = [
   },
   {
     id: "soft-girl",
-    name: "Soft girl blush",
+    name: "Phòng soft girl",
     kind: "solid",
     color: "#f8d7e8",
     group: "genz",
@@ -223,7 +223,7 @@ export const PRODUCT_SAMPLES: ProductSample[] = [
   },
   {
     id: "quan-jean",
-    name: "Quần jean",
+    name: "Quần jean nữ",
     src: "/images/product-quan-jean.jpg",
     kind: "bottom",
     priceVnd: 429000,
@@ -239,7 +239,7 @@ export const PRODUCT_SAMPLES: ProductSample[] = [
   },
   {
     id: "giay-sneaker",
-    name: "Sneaker trắng",
+    name: "Giày sneaker trắng",
     src: "/images/product-giay-sneaker.jpg",
     kind: "shoes",
     priceVnd: 599000,

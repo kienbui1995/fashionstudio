@@ -20,6 +20,28 @@ export const authClient = createAuthClient({
       if (token) ctx.headers.set("Authorization", `Bearer ${token}`);
       return ctx;
     },
+    onSuccess(ctx) {
+      // Live preview iframe often cannot persist Secure cookies → capture bearer
+      // from Better Auth responses (email sign-in/up, get-session, OAuth).
+      try {
+        const headerToken =
+          typeof ctx.response?.headers?.get === "function"
+            ? ctx.response.headers.get("set-auth-token")
+            : null;
+        if (headerToken) {
+          setBearerToken(headerToken);
+          return;
+        }
+        // Some email responses put token only in JSON body
+        const data = ctx.data as { token?: string } | null | undefined;
+        if (data && typeof data.token === "string" && data.token.length > 8) {
+          // Body token may be raw session token; prefer full signed header when present
+          if (!getBearerToken()) setBearerToken(data.token);
+        }
+      } catch {
+        /* ignore */
+      }
+    },
   },
 });
 
@@ -58,6 +80,12 @@ function setBearerToken(token: string | null): void {
   } catch {
     /* storage unavailable — ignore */
   }
+}
+
+/** Persist session token for live-preview iframe (partitioned cookies). */
+export function persistSessionToken(token: string | null | undefined): void {
+  if (!token) return;
+  setBearerToken(token);
 }
 
 /**
@@ -115,9 +143,9 @@ export async function signIn(
   setBearerToken(null);
 
   if (inLivePreview()) {
-    if (!popup) throw new Error("Pop-up blocked — allow pop-ups for sign-in");
+    if (!popup) throw new Error("Popup bị chặn — hãy cho phép popup để đăng nhập");
     const token = await waitForPopupToken(popup);
-    if (!token) throw new Error("Sign-in was cancelled or failed");
+    if (!token) throw new Error("Đăng nhập bị hủy hoặc thất bại");
     setBearerToken(token);
     // Refresh the client session store with the bearer attached (onRequest).
     // Avoid a full iframe reload when we're already on the destination — that
@@ -142,7 +170,7 @@ export async function signIn(
     callbackURL,
     errorCallbackURL,
   });
-  if (error) throw new Error(error.message ?? "Sign-in failed");
+  if (error) throw new Error(error.message ?? "Đăng nhập thất bại");
   if (data?.url) window.location.href = data.url;
 }
 

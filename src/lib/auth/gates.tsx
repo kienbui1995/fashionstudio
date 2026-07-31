@@ -35,7 +35,7 @@ export function SignedOut({ children }: { children: ReactNode }) {
 /**
  * Client-side redirect to the sign-in route (TanStack `<Navigate>` — NOT a full
  * `window.location` reload). A hard navigation re-bootstraps the SPA and re-runs
- * session loading, which feels like a second "Loading…" on /login.
+ * session loading, which feels like a second "Đang tải…" on /login.
  *
  * Guard routes by waiting out `isPending` first (see `use-current-user`), then
  * render this.
@@ -52,7 +52,7 @@ export function RedirectToSignIn({ to = SIGN_IN_PATH }: { to?: string }) {
 export function UserButton() {
   const user = useCurrentUser();
   if (!user) return null;
-  const label = user.displayName ?? user.primaryEmail ?? "Account";
+  const label = user.displayName ?? user.primaryEmail ?? "Tài khoản";
   return (
     <div className="flex items-center gap-2">
       {user.profileImageUrl ? (
@@ -73,7 +73,7 @@ export function UserButton() {
           onClick={() => void signOut()}
           className="cursor-pointer text-sm underline-offset-4 opacity-70 hover:underline"
         >
-          Sign out
+          Đăng xuất
         </button>
       )}
     </div>

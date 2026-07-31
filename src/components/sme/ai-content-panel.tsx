@@ -49,7 +49,7 @@ export function AiContentPanel({
       setResult(out);
       toast.success("Đã tạo nội dung AI");
     } catch (e) {
-      toast.error((e as Error).message || "Lỗi generate");
+      toast.error((e as Error).message || "Tạo nội dung lỗi");
     } finally {
       setLoading(false);
     }
@@ -124,7 +124,7 @@ export function AiContentPanel({
             className="w-full whitespace-pre-wrap rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-left text-sm leading-relaxed hover:border-accent"
             onClick={() =>
               void copyText(result.body).then((ok) =>
-                ok ? toast.success("Đã copy") : toast.error("Copy lỗi"),
+                ok ? toast.success("Đã sao chép") : toast.error("Sao chép lỗi"),
               )
             }
           >
@@ -132,7 +132,7 @@ export function AiContentPanel({
           </button>
           {result.meta && (
             <p className="text-[11px] text-fg-subtle">
-              {typeof result.meta.score === "number" && `Score ${result.meta.score} · `}
+              {typeof result.meta.score === "number" && `Điểm ${result.meta.score} · `}
               Click body để copy
             </p>
           )}

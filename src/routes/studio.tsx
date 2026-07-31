@@ -56,21 +56,33 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/studio")({
   head: () =>
     seoHead({
-      title: "Studio try-on & video TikTok",
+      title: "Studio thử đồ & video TikTok",
       description:
-        "Mở studio try-on thời trang: upload sản phẩm, ghép mẫu, xuất look PNG và video TikTok 9:16 cho local brand Việt.",
+        "Mở studio thử đồ: tải sản phẩm, ghép mẫu, xuất ảnh PNG và video TikTok 9:16 cho local brand Việt.",
       path: "/studio",
-      keywords: ["studio try-on", "tạo video tiktok thời trang"],
+      keywords: ["studio thử đồ", "tạo video tiktok thời trang"],
     }),
   component: StudioPage,
 });
 
+
+const KIND_LABELS: Record<string, string> = {
+  top: "Áo",
+  bottom: "Quần",
+  dress: "Đầm",
+  bag: "Túi",
+  shoes: "Giày",
+  jewelry: "Trang sức",
+  accessory: "Phụ kiện",
+  other: "Khác",
+};
+
 const TABS: { id: StudioTab; label: string; icon: typeof Sparkles }[] = [
-  { id: "create", label: "Try-on", icon: Sparkles },
-  { id: "gallery", label: "Gallery", icon: ImagePlus },
-  { id: "prompts", label: "AI / prompts", icon: Wand2 },
+  { id: "create", label: "Thử đồ", icon: Sparkles },
+  { id: "gallery", label: "Thư viện", icon: ImagePlus },
+  { id: "prompts", label: "AI nội dung", icon: Wand2 },
   { id: "video", label: "Video", icon: Video },
-  { id: "clients", label: "Clients", icon: Users },
+  { id: "clients", label: "Khách hàng", icon: Users },
 ];
 
 function StudioPage() {
@@ -88,7 +100,7 @@ function StudioPage() {
             </Link>
           </Button>
           <span className="font-display text-sm font-medium sm:text-base">
-            Studio try-on
+            Studio thử đồ
           </span>
           <Badge variant="accent" className="hidden sm:inline-flex">
             Fash
@@ -96,7 +108,7 @@ function StudioPage() {
         </div>
         <nav
           className="flex max-w-[55vw] items-center gap-0.5 overflow-x-auto sm:max-w-none"
-          aria-label="Studio tabs"
+          aria-label="Tab studio"
         >
           {TABS.map((t) => (
             <button
@@ -117,7 +129,7 @@ function StudioPage() {
           ))}
         </nav>
         <Button asChild size="sm" variant="outline">
-          <Link to="/dashboard">Dashboard</Link>
+          <Link to="/dashboard">Bảng điều khiển</Link>
         </Button>
       </header>
 
@@ -176,9 +188,9 @@ function StudioSidebar() {
       const raw = await fileToDataUrl(file);
       const id = `custom_${Date.now().toString(36)}`;
       setModel(id, raw, file.name.replace(/\.[^.]+$/, "") || "Mẫu custom");
-      toast.success("Đã thêm mẫu — tách nền khi xuất");
+      toast.success("Đã thêm mẫu — sẽ tách nền khi xuất");
     } catch (e) {
-      toast.error((e as Error).message || "Upload mẫu lỗi");
+      toast.error((e as Error).message || "Không tải được ảnh mẫu");
     }
   }
 
@@ -190,7 +202,7 @@ function StudioSidebar() {
       setProductName(name);
       toast.success("Đã thêm layer sản phẩm");
     } catch (e) {
-      toast.error((e as Error).message || "Upload SP lỗi");
+      toast.error((e as Error).message || "Không tải được ảnh sản phẩm");
     }
   }
 
@@ -203,8 +215,8 @@ function StudioSidebar() {
 
   async function onExport() {
     const dataUrl = await exportLook({ download: true });
-    if (dataUrl) toast.success("Đã xuất PNG + lưu gallery");
-    else toast.error("Xuất look thất bại");
+    if (dataUrl) toast.success("Đã xuất PNG và lưu vào thư viện");
+    else toast.error("Xuất look thất bại — kiểm tra mẫu/sản phẩm");
   }
 
   const vnScenes = VN_SCENES.filter((s) => s.group === "vn" || !s.group);
@@ -242,11 +254,11 @@ function StudioSidebar() {
         </div>
       </section>
 
-      {/* Model picker */}
+      {/* Chọn mẫu */}
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-            Model picker
+            Chọn mẫu
           </h2>
           <Button
             size="sm"
@@ -254,7 +266,7 @@ function StudioSidebar() {
             type="button"
             onClick={() => modelFileRef.current?.click()}
           >
-            <Upload className="size-3.5" /> Upload
+            <Upload className="size-3.5" /> Tải lên
           </Button>
           <input
             ref={modelFileRef}
@@ -290,7 +302,7 @@ function StudioSidebar() {
       {/* Scenes */}
       <section>
         <h2 className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-          Scene grid · VN
+          Cảnh Việt Nam
         </h2>
         <SceneGrid scenes={vnScenes} sceneId={sceneId} onPick={setSceneId} />
         <h2 className="mt-3 text-xs font-medium uppercase tracking-wider text-fg-subtle">
@@ -303,7 +315,7 @@ function StudioSidebar() {
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-            Product samples
+            Mẫu sản phẩm
           </h2>
           <Button
             size="sm"
@@ -311,7 +323,7 @@ function StudioSidebar() {
             type="button"
             onClick={() => productFileRef.current?.click()}
           >
-            <Upload className="size-3.5" /> Upload
+            <Upload className="size-3.5" /> Tải lên
           </Button>
           <input
             ref={productFileRef}
@@ -348,7 +360,7 @@ function StudioSidebar() {
         <div className="flex items-center gap-2">
           <Layers className="size-3.5 text-accent" />
           <h2 className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-            Layers
+            Lớp sản phẩm
           </h2>
         </div>
         <ul className="mt-2 space-y-2">
@@ -371,7 +383,7 @@ function StudioSidebar() {
                   {l.processing ? "…" : ""}
                   {l.name}
                 </span>
-                <Badge variant="outline">{l.kind}</Badge>
+                <Badge variant="outline">{KIND_LABELS[l.kind] ?? l.kind}</Badge>
               </button>
               {selectedGarmentId === l.id && (
                 <LayerSliders
@@ -384,7 +396,7 @@ function StudioSidebar() {
                   type="button"
                   className="text-fg-subtle hover:text-danger"
                   onClick={() => removeGarment(l.id)}
-                  aria-label="Xoá layer"
+                  aria-label="Xóa lớp"
                 >
                   <Trash2 className="size-3.5" />
                 </button>
@@ -393,21 +405,21 @@ function StudioSidebar() {
           ))}
           {garments.length === 0 && (
             <li className="text-xs text-fg-muted">
-              Chưa có layer — chọn sample hoặc upload.
+              Chưa có lớp — chọn mẫu sản phẩm hoặc tải ảnh lên.
             </li>
           )}
         </ul>
         {selected && (
           <p className="mt-2 text-[10px] text-fg-subtle">
-            Kéo layer trên canvas hoặc chỉnh slider scale / vị trí.
+            Kéo lớp trên khung hình hoặc chỉnh cỡ / vị trí bằng thanh trượt.
           </p>
         )}
       </section>
 
-      {/* Watermark */}
+      {/* Watermark thương hiệu */}
       <section>
         <h2 className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-          Watermark
+          Watermark thương hiệu
         </h2>
         <label className="mt-2 flex items-center gap-2 text-xs">
           <input
@@ -421,16 +433,16 @@ function StudioSidebar() {
           value={watermark.text}
           onChange={(e) => setWatermark({ text: e.target.value })}
           className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-bg-elevated px-2 py-1.5 text-sm"
-          placeholder="Text brand"
+          placeholder="Tên thương hiệu"
         />
         <input
           value={watermark.subtext}
           onChange={(e) => setWatermark({ subtext: e.target.value })}
           className="mt-2 w-full rounded-[var(--radius-md)] border border-border bg-bg-elevated px-2 py-1.5 text-sm"
-          placeholder="Subtext"
+          placeholder="Dòng phụ / @handle"
         />
         <label className="mt-2 block text-[10px] text-fg-muted">
-          Opacity {Math.round(watermark.opacity * 100)}%
+          Độ mờ {Math.round(watermark.opacity * 100)}%
           <input
             type="range"
             min={0.1}
@@ -538,7 +550,16 @@ function LayerSliders({
         ] as const
       ).map(([key, min, max, step]) => (
         <label key={key} className="block text-[10px] text-fg-muted">
-          {key} {Number(layer[key]).toFixed(key === "rotation" ? 0 : 2)}
+          {key === "scale"
+            ? "Cỡ"
+            : key === "x"
+              ? "Ngang"
+              : key === "y"
+                ? "Dọc"
+                : key === "rotation"
+                  ? "Xoay"
+                  : "Độ mờ"}{" "}
+          {Number(layer[key]).toFixed(key === "rotation" ? 0 : 2)}
           <input
             type="range"
             min={min}
@@ -619,12 +640,12 @@ function CreateCanvas() {
     <div className="w-full max-w-md">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div>
-          <h1 className="font-display text-xl font-semibold">Try-on canvas</h1>
+          <h1 className="font-display text-xl font-semibold">Khung thử đồ</h1>
           <p className="text-xs text-fg-muted">
-            Scene + model + garments · kéo layer · watermark overlay
+            Cảnh + mẫu + sản phẩm · kéo layer · watermark
           </p>
         </div>
-        <Badge variant="outline">3:4 preview</Badge>
+        <Badge variant="outline">Xem trước 3:4</Badge>
       </div>
 
       <div
@@ -646,7 +667,7 @@ function CreateCanvas() {
 
         <img
           src={modelSrc}
-          alt="Model"
+          alt="Mẫu"
           className="absolute left-1/2 top-[8%] h-[88%] w-auto max-w-[92%] -translate-x-1/2 object-contain"
           style={{
             filter:
@@ -760,7 +781,7 @@ function GalleryPanel() {
     <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">Gallery looks</h1>
+          <h1 className="font-display text-2xl font-semibold">Thư viện look</h1>
           <p className="mt-1 text-sm text-fg-muted">
             Ảnh đã xuất từ try-on — tải lại hoặc share caption.
           </p>
@@ -773,7 +794,7 @@ function GalleryPanel() {
       </div>
       {generations.length === 0 ? (
         <p className="mt-10 text-center text-sm text-fg-muted">
-          Chưa có look. Xuất PNG từ tab Try-on.
+          Chưa có look. Xuất PNG từ tab Thử đồ.
         </p>
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -812,11 +833,11 @@ function GalleryPanel() {
                     onClick={() =>
                       void shareOrCopy({
                         title: `${g.label} · ${watermark.text || "Fash"}`,
-                        text: `Look ${g.label} — Fash Studio try-on (${modelLabel})`,
+                        text: `Look ${g.label} — Fash Studio thử đồ (${modelLabel})`,
                       }).then((r) =>
                         r === "failed"
-                          ? toast.error("Share lỗi")
-                          : toast.success(r === "shared" ? "Đã share" : "Đã copy"),
+                          ? toast.error("Chia sẻ thất bại")
+                          : toast.success(r === "shared" ? "Đã chia sẻ" : "Đã sao chép"),
                       )
                     }
                   >
@@ -844,7 +865,7 @@ function PromptsAiTab() {
   return (
     <main className="mx-auto grid w-full max-w-5xl flex-1 gap-4 p-4 lg:grid-cols-2 sm:p-6">
       <div className="space-y-3">
-        <h1 className="font-display text-xl font-semibold">AI / prompts</h1>
+        <h1 className="font-display text-xl font-semibold">AI nội dung</h1>
         <p className="text-sm text-fg-muted">
           Prompt cards gợi ý scene + caption. Click để áp vào canvas.
         </p>
@@ -856,7 +877,7 @@ function PromptsAiTab() {
                 onClick={() => {
                   applyPromptCard(p);
                   setActiveTab("create");
-                  toast.success(`Áp prompt: ${p.title}`);
+                  toast.success(`Đã áp dụng gợi ý: ${p.title}`);
                 }}
                 className="w-full rounded-[var(--radius-lg)] border border-border bg-bg-elevated p-3 text-left hover:border-accent"
               >
@@ -933,11 +954,11 @@ function VideoPanel() {
         onProgress: (pct, label) => setProgress(pct, label),
       });
       downloadBlob(result.blob, result.filename);
-      toast.success(`Đã tải ${result.filename}`);
+      toast.success(`Đã tải video ${result.filename}`);
       setProgress(100, "Video xong");
     } catch (e) {
       console.error(e);
-      toast.error((e as Error).message || "Xuất video lỗi");
+      toast.error((e as Error).message || "Xuất video thất bại");
       setProgress(0, "");
     } finally {
       setExporting(false);
@@ -952,11 +973,11 @@ function VideoPanel() {
           <h1 className="font-display text-xl font-semibold">Video TikTok</h1>
         </div>
         <p className="mt-1 text-sm text-fg-muted">
-          Preset 9:16 · Ken Burns · caption safe-zone · watermark brand.
+          Preset dọc 9:16 · hiệu ứng chuyển động · caption an toàn · watermark.
         </p>
 
         <h2 className="mt-6 text-xs font-medium uppercase tracking-wider text-fg-subtle">
-          TikTok presets
+          Preset TikTok
         </h2>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {TIKTOK_VIDEO_PRESETS.map((p) => (
@@ -981,7 +1002,7 @@ function VideoPanel() {
         </div>
 
         <h2 className="mt-6 text-xs font-medium uppercase tracking-wider text-fg-subtle">
-          Quality
+          Chất lượng
         </h2>
         <div className="mt-2 flex flex-wrap gap-2">
           {(Object.keys(QUALITY_PRESETS) as VideoQualityId[]).map((q) => (
@@ -1020,7 +1041,7 @@ function VideoPanel() {
           ) : (
             <Video className="size-4" />
           )}
-          Export video
+          Xuất video
         </Button>
         {(exporting || isCompositing) && (
           <p className="mt-2 text-xs text-accent">
@@ -1058,7 +1079,7 @@ function ClientsPanel() {
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-4 sm:p-6">
-      <h1 className="font-display text-2xl font-semibold">Clients</h1>
+      <h1 className="font-display text-2xl font-semibold">Khách hàng</h1>
       <p className="mt-1 text-sm text-fg-muted">
         Thư viện khách local brand — lưu trên thiết bị (localStorage).
       </p>
@@ -1074,7 +1095,7 @@ function ClientsPanel() {
           setName("");
           setPhone("");
           setNote("");
-          toast.success("Đã thêm khách");
+          toast.success("Đã thêm khách hàng");
         }}
       >
         <input
@@ -1138,7 +1159,7 @@ function ClientsPanel() {
           </li>
         ))}
         {customers.length === 0 && (
-          <li className="text-center text-sm text-fg-muted">Chưa có khách.</li>
+          <li className="text-center text-sm text-fg-muted">Chưa có khách hàng.</li>
         )}
       </ul>
     </main>

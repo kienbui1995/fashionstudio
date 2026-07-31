@@ -101,27 +101,102 @@ const LOCAL_DEV_ORIGINS: string[] = [
   "http://127.0.0.1:8080",
   "http://[::1]:8080",
 ];
+
+/**
+ * Production / custom domains that must accept credentialed auth POSTs.
+ * Missing host → FORBIDDEN "Invalid origin" on sign-in (e.g. fashionstudio.pmai.space).
+ *
+ * Override/extend via env:
+ *   BETTER_AUTH_URL=https://fashionstudio.pmai.space
+ *   BETTER_AUTH_TRUSTED_ORIGINS=https://a.com,https://b.com
+ *   SITE_URL / VITE_SITE_URL
+ */
+function productionTrusted(): { hosts: string[]; origins: string[] } {
+  const hosts = new Set<string>([
+    "fashionstudio.pmai.space",
+    "www.fashionstudio.pmai.space",
+    "fash.studio",
+    "www.fash.studio",
+    "*.pmai.space",
+  ]);
+  const origins = new Set<string>();
+
+  const addOrigin = (raw: string | undefined) => {
+    if (!raw) return;
+    const v = raw.trim().replace(/\/$/, "");
+    if (!v) return;
+    origins.add(v);
+    try {
+      const u = new URL(v.includes("://") ? v : `https://${v}`);
+      hosts.add(u.hostname);
+      origins.add(u.origin);
+    } catch {
+      /* ignore malformed */
+    }
+  };
+
+  addOrigin(explicitBaseURL);
+  addOrigin(env("SITE_URL"));
+  addOrigin(env("VITE_SITE_URL"));
+  addOrigin(env("VERCEL_PROJECT_PRODUCTION_URL")
+    ? `https://${env("VERCEL_PROJECT_PRODUCTION_URL")}`
+    : undefined);
+  addOrigin(env("VERCEL_URL") ? `https://${env("VERCEL_URL")}` : undefined);
+
+  const extra = env("BETTER_AUTH_TRUSTED_ORIGINS");
+  if (extra) {
+    for (const part of extra.split(",")) addOrigin(part);
+  }
+
+  // Always allow the known deploy host (user reported Invalid origin here)
+  addOrigin("https://fashionstudio.pmai.space");
+  addOrigin("https://www.fashionstudio.pmai.space");
+
+  // Expand host wildcards to https/http origin wildcards Better Auth accepts
+  for (const h of [...hosts]) {
+    if (h.includes("*")) {
+      origins.add(`https://${h}`);
+      origins.add(`http://${h}`);
+    } else {
+      origins.add(`https://${h}`);
+      origins.add(`http://${h}`);
+    }
+  }
+
+  return { hosts: [...hosts], origins: [...origins] };
+}
+
+const prod = productionTrusted();
+
 const baseURL = explicitBaseURL ?? {
-  // Include loopback hosts so dynamic baseURL resolves for local email/password
-  // (not only the preview wildcard).
-  allowedHosts: [...previewAllowedHosts, "localhost", "127.0.0.1", "[::1]"],
+  // Include loopback + production hosts so dynamic baseURL resolves for
+  // email/password and OAuth callbacks on custom domains.
+  allowedHosts: [
+    ...previewAllowedHosts,
+    "localhost",
+    "127.0.0.1",
+    "[::1]",
+    ...prod.hosts,
+  ],
   // `auto` → trust both http:// and https:// expansions of allowedHosts
   // (preview is https; local dev is http).
   protocol: "auto" as const,
-  fallback: "http://localhost:8080",
+  fallback: "https://fashionstudio.pmai.space",
 };
 
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
-const trustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS]
-  : [
-      // Host wildcards (matched against Origin's host)
-      ...previewAllowedHosts,
-      // Full-origin wildcards (matched against Origin)
-      ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
-      ...LOCAL_DEV_ORIGINS,
-    ];
+const trustedOrigins: string[] = [
+  ...(explicitBaseURL ? [explicitBaseURL.replace(/\/$/, "")] : []),
+  ...previewAllowedHosts,
+  ...previewAllowedHosts.flatMap((host) => [
+    `https://${host}`,
+    `http://${host}`,
+  ]),
+  ...LOCAL_DEV_ORIGINS,
+  ...prod.origins,
+  ...prod.hosts,
+];
 
 const databaseUrl = env("DATABASE_URL");
 

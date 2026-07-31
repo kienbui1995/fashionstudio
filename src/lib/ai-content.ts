@@ -33,25 +33,25 @@ export const AI_KIND_OPTIONS: {
   hint: string;
 }[] = [
   { id: "caption", label: "Caption ngắn", hint: "1–3 dòng đăng mạng" },
-  { id: "tiktok_seo", label: "TikTok SEO", hint: "Keyword + hashtag + score" },
+  { id: "tiktok_seo", label: "SEO TikTok", hint: "Từ khóa + hashtag + điểm" },
   {
     id: "tiktok_shop",
-    label: "TikTok Shop listing",
+    label: "Listing TikTok Shop",
     hint: "Title + bullets listing",
   },
-  { id: "full_post", label: "Full post", hint: "Caption + CTA + hashtag" },
+  { id: "full_post", label: "Bài đăng đầy đủ", hint: "Caption + CTA + hashtag" },
   { id: "hook", label: "Hook 3s", hint: "Câu mở video" },
   { id: "hashtags", label: "Hashtag pack", hint: "4–8 tag ngách" },
   { id: "product_title", label: "Tiêu đề SP", hint: "Shopee / Shop title" },
-  { id: "email_blast", label: "Email blast", hint: "Subject + body ngắn" },
+  { id: "email_blast", label: "Email marketing", hint: "Subject + body ngắn" },
 ];
 
 export const AI_TONE_OPTIONS: { id: AiTone; label: string }[] = [
   { id: "friendly", label: "Thân thiện" },
-  { id: "luxury", label: "Sang / minimal luxury" },
+  { id: "luxury", label: "Sang trọng / tối giản" },
   { id: "genz", label: "Gen Z" },
-  { id: "hype", label: "Hype / flash" },
-  { id: "soft", label: "Soft girl" },
+  { id: "hype", label: "Hype / sôi động" },
+  { id: "soft", label: "Soft girl dễ thương" },
   { id: "sale", label: "Flash sale" },
   { id: "minimal", label: "Tối giản" },
   { id: "story", label: "Kể chuyện" },

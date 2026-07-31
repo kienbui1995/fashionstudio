@@ -27,7 +27,7 @@ export type QualityPreset = {
 export const QUALITY_PRESETS: Record<VideoQualityId, QualityPreset> = {
   draft: {
     id: "draft",
-    name: "Draft",
+    name: "Nháp",
     width: 540,
     height: 960,
     fps: 24,
@@ -41,7 +41,7 @@ export const QUALITY_PRESETS: Record<VideoQualityId, QualityPreset> = {
   },
   standard: {
     id: "standard",
-    name: "Standard",
+    name: "Chuẩn",
     width: 720,
     height: 1280,
     fps: 30,
