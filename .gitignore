@@ -1,5 +1,46 @@
+# Dependencies
 node_modules/
-.project_id
-.github_repo
+
+# Env & secrets (keep templates)
 .env
 .env.*
+!.env.example
+!.env*.example
+
+# Build / tooling
+dist/
+.output/
+.nitro/
+.tanstack/
+.vercel/
+.vite/
+*.local
+.DS_Store
+Thumbs.db
+
+# Logs & runtime
+*.log
+/tmp/
+/tmp/**
+startup.log
+app-startup.log
+
+# Platform / private workspace meta (do not publish)
+.project_id
+.github_repo
+.node_modules.lock
+.grok/status
+
+# Agent QA artifacts
+screenshots/qa/
+artifacts/
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# OS
+*.swp
+*~

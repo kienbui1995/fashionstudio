@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,7 @@ import {
   signIn,
 } from "@/lib/auth/client";
 import { emailAndPasswordEnabled } from "@/lib/auth/email-password";
+import { registerEmailHybrid } from "@/lib/auth/local-session";
 import { createShopLocal } from "@/lib/shops-types";
 import { seoHead } from "@/lib/seo";
 
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/register")({
     seoHead({
       title: "Đăng ký gian hàng local brand",
       description:
-        "Tạo tài khoản Fash Studio — studio try-on, video TikTok và vận hành SME thời trang Việt.",
+        "Tạo tài khoản Fash Studio — studio thử đồ, video TikTok và vận hành SME thời trang Việt.",
       path: "/register",
       keywords: ["đăng ký local brand", "tạo shop thời trang online"],
     }),
@@ -26,7 +27,6 @@ export const Route = createFileRoute("/register")({
 });
 
 function RegisterPage() {
-  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,23 +45,27 @@ function RegisterPage() {
     }
     setLoading(true);
     try {
-      const { data, error } = await authClient.signUp.email({
-        name: name.trim() || "Chủ shop",
-        email: email.trim(),
+      const result = await registerEmailHybrid({
+        email,
         password,
+        name: name.trim() || "Chủ shop",
+        betterAuthSignUp: async (args) => {
+          const res = await authClient.signUp.email({
+            email: args.email,
+            password: args.password,
+            name: args.name,
+          });
+          return res;
+        },
+        persistToken: (token) => persistSessionToken(token),
       });
-      if (error) throw new Error(error.message || "Đăng ký thất bại");
-      const token =
-        (data as { token?: string } | null | undefined)?.token ?? null;
-      if (token) persistSessionToken(token);
-      try {
-        await authClient.getSession();
-      } catch {
-        /* ignore */
-      }
       if (shopName.trim()) createShopLocal(shopName.trim());
-      toast.success("Tạo tài khoản thành công");
-      window.location.href = "/dashboard";
+      toast.success(
+        result.source === "server"
+          ? "Tạo tài khoản thành công"
+          : "Tạo tài khoản trên thiết bị thành công — có thể đăng nhập ngay",
+      );
+      window.location.assign("/dashboard");
     } catch (err) {
       toast.error((err as Error).message || "Đăng ký thất bại");
     } finally {
@@ -76,7 +80,7 @@ function RegisterPage() {
       </Link>
       <h1 className="font-display text-2xl font-semibold">Đăng ký gian hàng</h1>
       <p className="mt-2 text-sm text-fg-muted">
-        Mở tài khoản để dùng studio try-on + dashboard SME.
+        Tạo tài khoản bằng email để vào studio + bảng điều khiển.
       </p>
 
       {authEnabled && emailAndPasswordEnabled && (
@@ -96,7 +100,7 @@ function RegisterPage() {
             <input
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
-              placeholder="VD: Atelier Hanoi"
+              placeholder="VD: Atelier Hà Nội"
               className="mt-1 w-full rounded-[var(--radius-md)] border border-border bg-bg-elevated px-3 py-2 text-sm"
             />
           </label>
@@ -142,7 +146,12 @@ function RegisterPage() {
                 void signIn(p.providerId, {
                   callbackURL: "/dashboard",
                   errorCallbackURL: "/register",
-                }).catch((err) => toast.error((err as Error).message))
+                }).catch((err) =>
+                  toast.error(
+                    (err as Error).message ||
+                      "Google/X lỗi — hãy đăng ký bằng email",
+                  ),
+                )
               }
             >
               Dùng {p.label}

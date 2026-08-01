@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,78 @@ import {
   GROK_PROVIDERS,
   authClient,
   authEnabled,
-  getBearerToken,
   persistSessionToken,
   signIn,
 } from "@/lib/auth/client";
 import { emailAndPasswordEnabled } from "@/lib/auth/email-password";
+import { loginEmailHybrid } from "@/lib/auth/local-session";
 import { seoHead } from "@/lib/seo";
+
+
+function OAuthSetupHint() {
+  const [status, setStatus] = useState<{
+    googleDirect?: { configured?: boolean; callbackUrl?: string };
+    grokBroker?: { usingPreviewClient?: boolean };
+  } | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/oauth-status")
+      .then((r) => r.json())
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, []);
+
+  const googleOk = status?.googleDirect?.configured;
+  const previewOnly = status?.grokBroker?.usingPreviewClient;
+
+  return (
+    <details className="mt-8 rounded-[var(--radius-lg)] border border-border bg-bg-elevated p-4 text-xs text-fg-muted">
+      <summary className="cursor-pointer font-medium text-fg">
+        Cấu hình Google OAuth production
+        {googleOk === true && (
+          <span className="ml-2 text-accent">· Đã bật Google trực tiếp</span>
+        )}
+        {googleOk === false && previewOnly && (
+          <span className="ml-2 text-danger">· Chưa cấu hình</span>
+        )}
+      </summary>
+      <ol className="mt-3 list-decimal space-y-1.5 pl-4 leading-relaxed">
+        <li>
+          Google Cloud Console → APIs & Services → Credentials → Create
+          OAuth client (Web).
+        </li>
+        <li>
+          <strong className="text-fg">Authorized JavaScript origins:</strong>{" "}
+          <code className="text-accent">https://fashionstudio.pmai.space</code>
+        </li>
+        <li>
+          <strong className="text-fg">Authorized redirect URIs:</strong>{" "}
+          <code className="break-all text-accent">
+            {status?.googleDirect?.callbackUrl ||
+              "https://fashionstudio.pmai.space/api/auth/callback/google"}
+          </code>
+        </li>
+        <li>
+          Trên host deploy (Vercel/…), set env:
+          <pre className="mt-1 overflow-x-auto rounded bg-bg p-2 text-[10px] text-fg">
+{`BETTER_AUTH_URL=https://fashionstudio.pmai.space
+BETTER_AUTH_SECRET=<chuỗi ngẫu nhiên dài>
+GOOGLE_CLIENT_ID=<Client ID>
+GOOGLE_CLIENT_SECRET=<Client Secret>
+DATABASE_URL=<postgres>`}
+          </pre>
+        </li>
+        <li>Redeploy → bấm <strong className="text-fg">Dùng Google</strong>.</li>
+      </ol>
+      <p className="mt-3 text-[11px] text-fg-subtle">
+        Kiểm tra:{" "}
+        <a className="text-accent" href="/api/oauth-status" target="_blank" rel="noreferrer">
+          /api/oauth-status
+        </a>
+      </p>
+    </details>
+  );
+}
 
 export const Route = createFileRoute("/login")({
   head: () =>
@@ -24,20 +90,6 @@ export const Route = createFileRoute("/login")({
     }),
   component: LoginPage,
 });
-
-function mapEmailError(message: string | undefined): string {
-  const m = (message || "").toLowerCase();
-  if (m.includes("invalid") && (m.includes("password") || m.includes("email") || m.includes("credential"))) {
-    return "Email hoặc mật khẩu không đúng";
-  }
-  if (m.includes("origin") || m.includes("forbidden")) {
-    return "Domain chưa được phép (Invalid origin). Cần redeploy / set BETTER_AUTH_URL.";
-  }
-  if (m.includes("user not found") || m.includes("not found")) {
-    return "Chưa có tài khoản với email này — hãy đăng ký trước";
-  }
-  return message || "Đăng nhập thất bại";
-}
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -53,26 +105,23 @@ function LoginPage() {
     }
     setLoading(true);
     try {
-      const { data, error } = await authClient.signIn.email({
-        email: email.trim().toLowerCase(),
+      const result = await loginEmailHybrid({
+        email,
         password,
+        betterAuthSignIn: async (args) => {
+          const res = await authClient.signIn.email({
+            email: args.email,
+            password: args.password,
+          });
+          return res;
+        },
+        persistToken: (token) => persistSessionToken(token),
       });
-      if (error) throw new Error(mapEmailError(error.message));
-
-      // Prefer full token from onSuccess header; fallback body token
-      const bodyToken =
-        (data as { token?: string } | null | undefined)?.token ?? null;
-      if (!getBearerToken() && bodyToken) persistSessionToken(bodyToken);
-
-      // Confirm session before leaving the page
-      const session = await authClient.getSession();
-      if (!session.data?.user && !getBearerToken() && !bodyToken) {
-        throw new Error(
-          "Đăng nhập xong nhưng chưa giữ được phiên (cookie). Thử lại hoặc dùng trình duyệt khác.",
-        );
-      }
-
-      toast.success("Đăng nhập thành công");
+      toast.success(
+        result.source === "server"
+          ? "Đăng nhập thành công"
+          : "Đăng nhập thành công (tài khoản trên thiết bị)",
+      );
       window.location.assign("/dashboard");
     } catch (err) {
       toast.error((err as Error).message || "Đăng nhập thất bại");
@@ -88,7 +137,7 @@ function LoginPage() {
       </Link>
       <h1 className="font-display text-2xl font-semibold">Đăng nhập</h1>
       <p className="mt-2 text-sm text-fg-muted">
-        Vào bảng điều khiển gian hàng & studio thử đồ.
+        Dùng email đã đăng ký trên thiết bị này, hoặc Google/X nếu đã cấu hình.
       </p>
 
       {authEnabled && emailAndPasswordEnabled && (
@@ -119,6 +168,14 @@ function LoginPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Đang đăng nhập…" : "Đăng nhập bằng email"}
           </Button>
+          <p className="text-[11px] leading-relaxed text-fg-subtle">
+            Chưa có tài khoản?{" "}
+            <Link to="/register" className="text-accent">
+              Đăng ký
+            </Link>{" "}
+            trước. Sau mỗi lần deploy server, nếu quên mật khẩu hãy đăng ký lại
+            cùng email trên thiết bị này.
+          </p>
         </form>
       )}
 
@@ -152,21 +209,11 @@ function LoginPage() {
                 : `Dùng ${p.label}`}
             </Button>
           ))}
-          <p className="pt-1 text-center text-[11px] leading-relaxed text-fg-subtle">
-            Google/X cần OAuth trên domain production. Nếu lỗi, dùng{" "}
-            <strong className="text-fg-muted">email + mật khẩu</strong> (ổn định
-            hơn).
+          <p className="pt-1 text-center text-[11px] text-fg-subtle">
+            Google/X có thể lỗi trên domain mới. Email luôn hoạt động sau khi
+            đăng ký.
           </p>
         </div>
-      )}
-
-      {!authEnabled && (
-        <p className="mt-6 text-sm text-fg-muted">
-          Auth đang tắt — dùng tài khoản dev.{" "}
-          <Link to="/dashboard" className="text-accent">
-            Vào bảng điều khiển
-          </Link>
-        </p>
       )}
 
       <p className="mt-8 text-sm text-fg-muted">
@@ -175,6 +222,8 @@ function LoginPage() {
           Đăng ký gian hàng
         </Link>
       </p>
+
+      <OAuthSetupHint />
     </div>
   );
 }

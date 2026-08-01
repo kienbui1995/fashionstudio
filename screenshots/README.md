@@ -1,0 +1,1 @@
+# QA screenshots (local only)

@@ -16,6 +16,7 @@
  * client (preview-only, `*.grok-sandbox.com`) — rotate it by regenerating the
  * broker env var and this constant together.
  */
+/** Preview-only client (Grok sandbox). Not for production domains. */
 export const PREVIEW_CLIENT_ID = "grok_preview";
 export const PREVIEW_CLIENT_SECRET =
   "8bcdb7fc5a33874ad933ca568918d5790388a0795e44c4d1dea691f801b17ec5";

@@ -165,6 +165,27 @@ export async function signIn(
     return;
   }
 
+  // Production / top-level window:
+  // 1) Prefer direct Google social provider when GOOGLE_CLIENT_* is configured
+  // 2) Fall back to Grok broker (genericOAuth) for Google/X
+  const wantsGoogle =
+    providerId === "grok-google" || providerId === "google";
+  if (wantsGoogle) {
+    try {
+      const social = await authClient.signIn.social({
+        provider: "google",
+        callbackURL,
+        errorCallbackURL,
+      });
+      if (!social.error && social.data?.url) {
+        window.location.href = social.data.url;
+        return;
+      }
+    } catch {
+      /* try broker next */
+    }
+  }
+
   const { data, error } = await authClient.signIn.oauth2({
     providerId,
     callbackURL,
@@ -174,12 +195,12 @@ export async function signIn(
     const msg = error.message ?? "";
     if (/origin|csrf|forbidden/i.test(msg)) {
       throw new Error(
-        "Domain chưa được phép đăng nhập (Invalid origin). Thử email/mật khẩu hoặc set BETTER_AUTH_URL.",
+        "Domain chưa được phép đăng nhập (Invalid origin). Set BETTER_AUTH_URL=https://fashionstudio.pmai.space và redeploy.",
       );
     }
     if (/redirect|client|oauth|invalid/i.test(msg) || /sign.?in failed/i.test(msg)) {
       throw new Error(
-        "Google/X chưa cấu hình cho domain này. Hãy dùng email/mật khẩu, hoặc set GROK_AUTH_CLIENT_ID trên server.",
+        "Google production chưa sẵn sàng. Thêm GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (hoặc GROK_AUTH_CLIENT_*) trên server, rồi redeploy. Tạm dùng email/mật khẩu.",
       );
     }
     throw new Error(msg || "Đăng nhập thất bại");

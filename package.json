@@ -1,5 +1,5 @@
 {
-  "name": "app-builder-workspace",
+  "name": "fash-studio",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -90,5 +90,22 @@
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.1.0"
-  }
+  },
+  "description": "Fashion try-on studio for Vietnamese local brands \u2014 AI cutout, TikTok video, SME dashboard",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kienbui1995/fashionstudio.git"
+  },
+  "keywords": [
+    "fashion",
+    "try-on",
+    "tiktok",
+    "vietnam",
+    "local-brand",
+    "tanstack-start",
+    "better-auth",
+    "react"
+  ],
+  "homepage": "https://github.com/kienbui1995/fashionstudio"
 }

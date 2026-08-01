@@ -14,6 +14,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as StudioRouteImport } from './routes/studio'
+import { Route as ApiOauthStatusRouteImport } from './routes/api/oauth-status'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -43,6 +44,11 @@ const StudioRoute = StudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOauthStatusRoute = ApiOauthStatusRouteImport.update({
+  id: '/api/oauth-status',
+  path: '/api/oauth-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/studio': typeof StudioRoute
+  '/api/oauth-status': typeof ApiOauthStatusRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/studio': typeof StudioRoute
+  '/api/oauth-status': typeof ApiOauthStatusRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/studio': typeof StudioRoute
+  '/api/oauth-status': typeof ApiOauthStatusRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/studio'
+    | '/api/oauth-status'
     | '/blog/$slug'
     | '/blog/'
     | '/api/auth/$'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/studio'
+    | '/api/oauth-status'
     | '/blog/$slug'
     | '/blog'
     | '/api/auth/$'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/studio'
+    | '/api/oauth-status'
     | '/blog/$slug'
     | '/blog/'
     | '/api/auth/$'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   StudioRoute: typeof StudioRoute
+  ApiOauthStatusRoute: typeof ApiOauthStatusRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/oauth-status': {
+      id: '/api/oauth-status'
+      path: '/api/oauth-status'
+      fullPath: '/api/oauth-status'
+      preLoaderRoute: typeof ApiOauthStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/': {
       id: '/blog/'
       path: '/blog'
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   StudioRoute: StudioRoute,
+  ApiOauthStatusRoute: ApiOauthStatusRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

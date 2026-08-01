@@ -79,6 +79,19 @@ const grokIssuer = env("GROK_AUTH_ISSUER") ?? GROK_ISSUER_DEFAULT;
 const grokClientId = env("GROK_AUTH_CLIENT_ID") ?? PREVIEW_CLIENT_ID;
 const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET;
 
+/**
+ * Direct Google OAuth (production self-host).
+ * When set, Better Auth talks to Google without the Grok preview client.
+ * Create OAuth client in Google Cloud Console → Authorized redirect URI:
+ *   {BETTER_AUTH_URL}/api/auth/callback/google
+ * e.g. https://fashionstudio.pmai.space/api/auth/callback/google
+ */
+const googleClientId = env("GOOGLE_CLIENT_ID");
+const googleClientSecret = env("GOOGLE_CLIENT_SECRET");
+export const directGoogleConfigured = Boolean(
+  googleClientId && googleClientSecret,
+);
+
 /** True when federated sign-in is active (real auth is enforced). */
 export const authConfigured =
   !authDisabled && Boolean(grokClientId && grokClientSecret);
@@ -258,6 +271,20 @@ export const auth = betterAuth({
   // local loopback variants, or clients get "Invalid origin".
   trustedOrigins,
 
+  // Production Google (optional) — uses GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.
+  // Live preview + Grok deploy still use genericOAuth → broker below.
+  ...(directGoogleConfigured
+    ? {
+        socialProviders: {
+          google: {
+            clientId: googleClientId as string,
+            clientSecret: googleClientSecret as string,
+            prompt: "select_account",
+          },
+        },
+      }
+    : {}),
+
   // Encrypt broker-issued OAuth tokens at rest, and treat the broker's upstreams
   // as trusted first-party identities. The broker owns identity and X emails are
   // synthetic/unverified, so WITHOUT this a login can fail with
@@ -268,7 +295,10 @@ export const auth = betterAuth({
     encryptOAuthTokens: true,
     accountLinking: {
       enabled: true,
-      trustedProviders: GROK_PROVIDERS.map((p) => p.providerId),
+      trustedProviders: [
+        ...GROK_PROVIDERS.map((p) => p.providerId),
+        ...(directGoogleConfigured ? (["google"] as const) : []),
+      ],
       // X's synthetic email is never "verified", so don't gate linking on the
       // local user's email-verified state.
       requireLocalEmailVerified: false,
