@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Plus, Store } from "lucide-react";
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { LayoutDashboard, Package, Store, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CustomersPanel } from "@/components/dashboard/customers-panel";
+import { OverviewPanel } from "@/components/dashboard/overview-panel";
+import { ProductsPanel } from "@/components/dashboard/products-panel";
+import { ShopsPanel } from "@/components/dashboard/shops-panel";
 import { RedirectToSignIn, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import {
-  type Shop,
-  canRole,
-  createShopLocal,
-  loadShops,
-} from "@/lib/shops-types";
+import { useCustomerLibrary } from "@/lib/customer-library";
+import { useProductCatalog } from "@/lib/product-catalog";
+import { type Shop, loadShops } from "@/lib/shops-types";
 import { seoHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/dashboard")({
@@ -25,16 +24,42 @@ export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
 });
 
+type DashboardSection = "overview" | "products" | "shops" | "customers";
+
+const SECTIONS: Array<{
+  id: DashboardSection;
+  label: string;
+  icon: typeof Store;
+}> = [
+  { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
+  { id: "products", label: "Sản phẩm", icon: Package },
+  { id: "shops", label: "Gian hàng", icon: Store },
+  { id: "customers", label: "Khách hàng", icon: Users },
+];
+
 function DashboardPage() {
   const { user, isPending } = useCurrentUserState();
   const [shops, setShops] = useState<Shop[]>([]);
-  const [name, setName] = useState("");
+  const [section, setSection] = useState<DashboardSection>("overview");
+  // SSR and the first client render must match (local session is client-only),
+  // so hold the skeleton until after mount to avoid a hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+
+  const hydrateProducts = useProductCatalog((s) => s.hydrate);
+  const hydrateCustomers = useCustomerLibrary((s) => s.hydrate);
 
   useEffect(() => {
+    setMounted(true);
     setShops(loadShops());
-  }, []);
+    hydrateProducts();
+    hydrateCustomers();
+  }, [hydrateProducts, hydrateCustomers]);
 
-  if (isPending) {
+  function refreshShops() {
+    setShops(loadShops());
+  }
+
+  if (!mounted || isPending) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16">
         <div className="h-8 w-48 animate-pulse rounded bg-bg-muted" />
@@ -44,13 +69,6 @@ function DashboardPage() {
   }
 
   if (!user) return <RedirectToSignIn />;
-
-  function createShop() {
-    const shop = createShopLocal(name.trim() || "Gian hàng mới");
-    setShops(loadShops());
-    setName("");
-    toast.success(`Đã tạo ${shop.name}`);
-  }
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -66,58 +84,43 @@ function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="font-display text-2xl font-semibold">Bảng điều khiển gian hàng</h1>
+      <main className="mx-auto max-w-4xl px-4 py-10">
+        <h1 className="font-display text-2xl font-semibold">
+          Bảng điều khiển gian hàng
+        </h1>
         <p className="mt-2 text-sm text-fg-muted">
           Xin chào {user.displayName || user.primaryEmail || "bạn"}. Quản lý shop
           trên thiết bị này (lưu local, chưa cần máy chủ).
         </p>
 
-        <div className="mt-8 flex flex-col gap-2 sm:flex-row">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Tên gian hàng…"
-            className="flex-1 rounded-[var(--radius-md)] border border-border bg-bg-elevated px-3 py-2 text-sm"
-          />
-          <Button type="button" onClick={createShop}>
-            <Plus className="size-4" /> Tạo gian hàng
-          </Button>
-        </div>
-
-        <ul className="mt-8 space-y-3">
-          {shops.length === 0 && (
-            <li className="rounded-[var(--radius-lg)] border border-dashed border-border p-6 text-center text-sm text-fg-muted">
-              Chưa có gian hàng. Tạo một shop để gắn brand watermark & SEO.
-            </li>
-          )}
-          {shops.map((shop) => (
-            <li
-              key={shop.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-border bg-bg-elevated p-4"
+        <nav className="mt-6 flex flex-wrap gap-1.5 border-b border-border pb-3">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setSection(s.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors ${
+                section === s.id
+                  ? "bg-accent/20 text-accent"
+                  : "text-fg-muted hover:bg-bg-subtle hover:text-fg"
+              }`}
             >
-              <div className="flex items-start gap-3">
-                <Store className="mt-0.5 size-5 text-accent" />
-                <div>
-                  <p className="font-medium">{shop.name}</p>
-                  <p className="text-xs text-fg-muted">/{shop.slug}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <Badge variant="accent">{shop.role}</Badge>
-                    {canRole(shop.role, "editor") && (
-                      <Badge variant="outline">Xuất look</Badge>
-                    )}
-                    {canRole(shop.role, "admin") && (
-                      <Badge variant="outline">Quản trị đội nhóm</Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Button asChild size="sm" variant="secondary">
-                <Link to="/studio">Vào studio</Link>
-              </Button>
-            </li>
+              <s.icon className="size-4" />
+              {s.label}
+            </button>
           ))}
-        </ul>
+        </nav>
+
+        <div className="mt-6">
+          {section === "overview" && (
+            <OverviewPanel shops={shops} onGoTo={setSection} />
+          )}
+          {section === "products" && <ProductsPanel shops={shops} />}
+          {section === "shops" && (
+            <ShopsPanel shops={shops} onShopsChange={refreshShops} />
+          )}
+          {section === "customers" && <CustomersPanel />}
+        </div>
       </main>
     </div>
   );

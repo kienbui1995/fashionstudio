@@ -68,3 +68,25 @@ export function createShopLocal(name: string, role: ShopRole = "owner"): Shop {
   saveShops(next);
   return shop;
 }
+
+export function updateShopLocal(id: string, patch: { name?: string }): Shop | null {
+  const shops = loadShops();
+  const found = shops.find((s) => s.id === id);
+  if (!found) return null;
+  const updated: Shop = {
+    ...found,
+    ...(patch.name !== undefined
+      ? { name: patch.name.trim() || found.name, slug: slugifyShop(patch.name.trim() || found.name) }
+      : {}),
+  };
+  saveShops(shops.map((s) => (s.id === id ? updated : s)));
+  return updated;
+}
+
+export function removeShopLocal(id: string): boolean {
+  const shops = loadShops();
+  const next = shops.filter((s) => s.id !== id);
+  if (next.length === shops.length) return false;
+  saveShops(next);
+  return true;
+}
