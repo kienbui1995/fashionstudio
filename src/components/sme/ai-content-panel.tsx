@@ -31,6 +31,7 @@ export function AiContentPanel({
 }: Props) {
   const [kind, setKind] = useState<AiContentKind>("caption");
   const [tone, setTone] = useState<AiTone>("genz");
+  const [useRealAi, setUseRealAi] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
 
@@ -44,10 +45,14 @@ export function AiContentPanel({
         brand,
         scene,
         price,
-        engine: "local-rules",
+        engine: useRealAi ? "server-ai" : "local-rules",
       });
       setResult(out);
-      toast.success("Đã tạo nội dung AI");
+      toast.success(
+        out.engine === "server-ai"
+          ? "Đã tạo nội dung bằng AI thật"
+          : "Chưa có AI key — dùng template offline",
+      );
     } catch (e) {
       toast.error((e as Error).message || "Tạo nội dung lỗi");
     } finally {
@@ -68,8 +73,36 @@ export function AiContentPanel({
         <Badge variant="outline">generateWithEngine</Badge>
       </div>
       <p className="mt-1 text-xs text-fg-muted">
-        Caption, hook, SEO và listing — chạy client-side, không gọi API ngoài.
+        Chọn engine: AI thật qua server (cần <code>AI_API_KEY</code> trong{" "}
+        <code>.env.local</code>) hoặc template offline ngay trên máy.
       </p>
+
+      <div className="mt-3 flex gap-1.5">
+        <button
+          type="button"
+          onClick={() => setUseRealAi(true)}
+          className={cn(
+            "flex-1 rounded-full border px-3 py-1.5 text-xs",
+            useRealAi
+              ? "border-accent bg-accent/15 text-accent"
+              : "border-border text-fg-muted hover:bg-bg-subtle",
+          )}
+        >
+          ⚡ AI thật
+        </button>
+        <button
+          type="button"
+          onClick={() => setUseRealAi(false)}
+          className={cn(
+            "flex-1 rounded-full border px-3 py-1.5 text-xs",
+            !useRealAi
+              ? "border-accent bg-accent/15 text-accent"
+              : "border-border text-fg-muted hover:bg-bg-subtle",
+          )}
+        >
+          📴 Template offline
+        </button>
+      </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         {AI_KIND_OPTIONS.map((k) => (
@@ -119,6 +152,12 @@ export function AiContentPanel({
             <p className="text-sm font-medium">{result.title}</p>
             <Badge variant="outline">{result.engine}</Badge>
           </div>
+          {useRealAi && result.engine !== "server-ai" && (
+            <p className="text-[11px] text-amber-400">
+              Fallback template — thêm <code>AI_API_KEY</code> vào .env.local rồi
+              khởi động lại để dùng AI thật.
+            </p>
+          )}
           <button
             type="button"
             className="w-full whitespace-pre-wrap rounded-[var(--radius-md)] border border-border bg-bg px-3 py-2 text-left text-sm leading-relaxed hover:border-accent"

@@ -24,7 +24,13 @@ export type AiTone =
   | "soft";
 
 /** Engine ids used by AI panel */
-export type AiEngine = "fast" | "rich" | "seo" | "template" | "local-rules";
+export type AiEngine =
+  | "fast"
+  | "rich"
+  | "seo"
+  | "template"
+  | "local-rules"
+  | "server-ai";
 export type AiEngineId = AiEngine;
 
 export const AI_KIND_OPTIONS: {
@@ -166,10 +172,70 @@ function flairFor(tone?: AiTone) {
   return TONE_FLAIR[tone || "friendly"] || TONE_FLAIR.friendly!;
 }
 
+type ServerAiResponse = {
+  ok: boolean;
+  title?: string;
+  body?: string;
+  model?: string;
+  reason?: string;
+  message?: string;
+};
+
+/** Ask /api/ai-generate for real AI copy; null → caller falls back to templates. */
+async function tryServerAi(
+  input: GenerateInput,
+): Promise<AiContentResult | null> {
+  try {
+    const res = await fetch("/api/ai-generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: input.kind,
+        tone: input.tone,
+        kindLabel: input.kind_label,
+        toneLabel: AI_TONE_OPTIONS.find((t) => t.id === input.tone)?.label,
+        productName: input.productName,
+        brand: input.brand,
+        price: input.price,
+        scene: input.scene,
+        audience: input.audience,
+        extra: input.extra ?? input.language,
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as ServerAiResponse;
+    if (!data.ok || !data.body) return null;
+    return {
+      engine: "server-ai",
+      kind: input.kind ?? "caption",
+      title: data.title || "Nội dung AI",
+      body: data.body,
+      meta: {
+        model: data.model ?? "ai",
+        ...(data.reason ? { fallbackReason: data.reason } : {}),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Main generator — returns AiContentResult for panel, rich enough for all kinds. */
 export async function generateWithEngine(
   input: GenerateInput,
 ): Promise<AiContentResult> {
+  if (input.engine === "server-ai") {
+    const ai = await tryServerAi(input);
+    if (ai) return ai;
+    // No key / AI error → offline template, flagged in meta.
+    const fallback = await generateWithEngine({
+      ...input,
+      engine: "local-rules",
+    });
+    return { ...fallback, meta: { ...fallback.meta, aiFallback: "no-key-or-error" } };
+  }
+
   const engine: AiEngine = input.engine ?? "template";
   const wait =
     engine === "rich" ? 280 : engine === "seo" ? 220 : engine === "local-rules" ? 180 : 80;

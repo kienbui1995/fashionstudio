@@ -36,6 +36,9 @@ See [`.env.example`](./.env.example) and [docs/OAUTH_PRODUCTION.md](./docs/OAUTH
 | `BETTER_AUTH_SECRET` | prod | `openssl rand -hex 32` |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google login | Google Cloud Web client |
 | `DATABASE_URL` | prod | Postgres; empty → PGLite (dev only) |
+| `AI_API_KEY` | AI content | OpenAI-compatible key (Z.ai/GLM, Gemini, OpenAI…); empty → offline templates |
+| `AI_API_BASE` | AI content | default `https://api.z.ai/api/paas/v4` |
+| `AI_MODEL` | AI content | default `glm-4.6` |
 | `VITE_AUTH_ENABLED` | optional | default on; `"false"` disables auth |
 
 **Never commit real secrets.**
