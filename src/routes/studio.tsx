@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Clapperboard,
   Download,
+  Globe,
   ImagePlus,
   Layers,
   Loader2,
@@ -42,7 +43,8 @@ import {
 } from "@/lib/product-catalog";
 import { useShopClient } from "@/lib/shop-client";
 import { loadShops } from "@/lib/shops-types";
-import { shareOrCopy } from "@/lib/social-share";
+import { createLook, toShareableJpeg } from "@/lib/lookbook";
+import { copyText, shareOrCopy } from "@/lib/social-share";
 import {
   useStudioStore,
   type GarmentLayer,
@@ -915,6 +917,38 @@ function GalleryPanel() {
   const clearGenerations = useStudioStore((s) => s.clearGenerations);
   const modelLabel = useStudioStore((s) => s.modelLabel);
   const watermark = useStudioStore((s) => s.watermark);
+  const catalogPriceVnd = useStudioStore((s) => s.catalogPriceVnd);
+  const [sharingId, setSharingId] = useState<string | null>(null);
+
+  async function publishLook(id: string, dataUrl: string, label: string) {
+    setSharingId(id);
+    try {
+      const imageData = await toShareableJpeg(dataUrl);
+      const res = await createLook({
+        data: {
+          imageData,
+          productName: label || undefined,
+          shopName: watermark.text || undefined,
+          priceVnd: catalogPriceVnd,
+        },
+      });
+      const url = `${window.location.origin}${res.url}`;
+      const copied = await copyText(url);
+      toast.success(
+        `Link công khai: ${res.url}${copied ? " (đã copy)" : ""}`,
+        { duration: 8000 },
+      );
+    } catch (e) {
+      const msg = (e as Error).message || "";
+      toast.error(
+        msg.includes("auth") || msg.toLowerCase().includes("unauthorized")
+          ? "Cần đăng nhập để tạo link công khai"
+          : msg || "Tạo link thất bại",
+      );
+    } finally {
+      setSharingId(null);
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 p-4 sm:p-6">
@@ -963,6 +997,22 @@ function GalleryPanel() {
                     }}
                   >
                     <Download className="size-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="accent"
+                    type="button"
+                    className="flex-1"
+                    disabled={sharingId === g.id}
+                    title="Tạo link công khai cho khách xem"
+                    onClick={() => void publishLook(g.id, g.dataUrl, g.label)}
+                  >
+                    {sharingId === g.id ? (
+                      <Loader2 className="size-3 animate-spin" />
+                    ) : (
+                      <Globe className="size-3" />
+                    )}
+                    Công khai
                   </Button>
                   <Button
                     size="sm"

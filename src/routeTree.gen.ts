@@ -18,6 +18,7 @@ import { Route as ApiAiGenerateRouteImport } from './routes/api/ai-generate'
 import { Route as ApiOauthStatusRouteImport } from './routes/api/oauth-status'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as LIdRouteImport } from './routes/l.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +66,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LIdRoute = LIdRouteImport.update({
+  id: '/l/$id',
+  path: '/l/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/api/ai-generate': typeof ApiAiGenerateRoute
   '/api/oauth-status': typeof ApiOauthStatusRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/l/$id': typeof LIdRoute
   '/blog/': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/api/ai-generate': typeof ApiAiGenerateRoute
   '/api/oauth-status': typeof ApiOauthStatusRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/l/$id': typeof LIdRoute
   '/blog': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/api/ai-generate': typeof ApiAiGenerateRoute
   '/api/oauth-status': typeof ApiOauthStatusRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/l/$id': typeof LIdRoute
   '/blog/': typeof BlogIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/api/ai-generate'
     | '/api/oauth-status'
     | '/blog/$slug'
+    | '/l/$id'
     | '/blog/'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/api/ai-generate'
     | '/api/oauth-status'
     | '/blog/$slug'
+    | '/l/$id'
     | '/blog'
     | '/api/auth/$'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/api/ai-generate'
     | '/api/oauth-status'
     | '/blog/$slug'
+    | '/l/$id'
     | '/blog/'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   ApiAiGenerateRoute: typeof ApiAiGenerateRoute
   ApiOauthStatusRoute: typeof ApiOauthStatusRoute
   BlogSlugRoute: typeof BlogSlugRoute
+  LIdRoute: typeof LIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/l/$id': {
+      id: '/l/$id'
+      path: '/l/$id'
+      fullPath: '/l/$id'
+      preLoaderRoute: typeof LIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -244,6 +264,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiGenerateRoute: ApiAiGenerateRoute,
   ApiOauthStatusRoute: ApiOauthStatusRoute,
   BlogSlugRoute: BlogSlugRoute,
+  LIdRoute: LIdRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
