@@ -188,6 +188,12 @@ type StudioState = {
   lastTrend: TrendSnapshot;
   trendLoading: boolean;
   exportCustomerName: string;
+  /** Price of the catalog product behind the current look (AI/SEO context). */
+  catalogPriceVnd: number | null;
+  /** Category of the catalog product behind the current look. */
+  catalogCategory: string | null;
+  /** True once the user edits watermark fields by hand — stops auto-fill. */
+  watermarkTouched: boolean;
 
   // —— UI compat ——
   tab: StudioTab;
@@ -208,6 +214,8 @@ type StudioState = {
     src: string;
     name?: string;
     kind?: GarmentKind;
+    priceVnd?: number | null;
+    category?: string;
   }) => Promise<string>;
   removeGarment: (id: string) => void;
   updateGarment: (id: string, patch: Partial<GarmentLayer>) => void;
@@ -215,7 +223,10 @@ type StudioState = {
   setSceneId: (id: string) => void;
   selectGarment: (id: string | null) => void;
   setActiveTab: (tab: StudioTab) => void;
-  setWatermark: (patch: Partial<WatermarkOptions>) => void;
+  setWatermark: (
+    patch: Partial<WatermarkOptions>,
+    opts?: { touched?: boolean },
+  ) => void;
   resetWatermark: () => void;
   exportLook: (opts?: {
     width?: number;
@@ -297,6 +308,9 @@ export const useStudioStore = create<StudioState>((set, get) => {
     lastTrend: null,
     trendLoading: false,
     exportCustomerName: "",
+    catalogPriceVnd: null,
+    catalogCategory: null,
+    watermarkTouched: false,
 
     tab: "create",
     customModels: [],
@@ -366,7 +380,7 @@ export const useStudioStore = create<StudioState>((set, get) => {
       }
     },
 
-    async addGarment({ src, name, kind }) {
+    async addGarment({ src, name, kind, priceVnd, category }) {
       const id = uid("garment");
       const fileName = name || `Sản phẩm ${get().garments.length + 1}`;
       const gKind = kind ?? guessKind(fileName);
@@ -396,6 +410,8 @@ export const useStudioStore = create<StudioState>((set, get) => {
           selectedGarmentId: id,
           selectedLayerId: id,
           productName: fileName,
+          catalogPriceVnd: priceVnd ?? null,
+          catalogCategory: category ?? null,
           progress: 5,
           progressLabel: `Tách nền ${fileName}…`,
           isProcessing: true,
@@ -586,10 +602,10 @@ export const useStudioStore = create<StudioState>((set, get) => {
       set({ activeTab: tab, tab });
     },
 
-    setWatermark(patch) {
+    setWatermark(patch, opts) {
       const next = { ...get().watermark, ...patch };
       saveWatermark(next);
-      set({ watermark: next });
+      set({ watermark: next, watermarkTouched: opts?.touched ?? true });
     },
 
     resetWatermark() {

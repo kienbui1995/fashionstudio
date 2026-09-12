@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import * as Popover from "@radix-ui/react-popover";
 import {
   ArrowLeft,
   Clapperboard,
@@ -7,6 +8,7 @@ import {
   ImagePlus,
   Layers,
   Loader2,
+  Package,
   Sparkles,
   Trash2,
   Upload,
@@ -19,6 +21,7 @@ import { AiContentPanel } from "@/components/sme/ai-content-panel";
 import { TikTokSeoPanel } from "@/components/sme/tiktok-seo-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useCustomerLibrary } from "@/lib/customer-library";
 import {
   MODELS,
   PRODUCT_SAMPLES,
@@ -27,12 +30,18 @@ import {
   formatVnd,
   type Scene,
 } from "@/lib/fashion-data";
-import { useCustomerLibrary } from "@/lib/customer-library";
 import {
   fileToDataUrl,
   layerDrawSize,
   type GarmentKind,
 } from "@/lib/image-pipeline";
+import {
+  formatPrice,
+  useProductCatalog,
+  type Product,
+} from "@/lib/product-catalog";
+import { useShopClient } from "@/lib/shop-client";
+import { loadShops } from "@/lib/shops-types";
 import { shareOrCopy } from "@/lib/social-share";
 import {
   useStudioStore,
@@ -157,6 +166,29 @@ function CreateWorkspace() {
   );
 }
 
+function categoryToKind(category: Product["category"]): GarmentKind {
+  switch (category) {
+    case "Áo":
+    case "Áo khoác":
+      return "top";
+    case "Quần":
+      return "bottom";
+    case "Váy / Đầm":
+      return "dress";
+    case "Phụ kiện":
+      return "accessory";
+    default:
+      return "other";
+  }
+}
+
+/** Ảnh mẫu theo danh mục khi sản phẩm catalog chưa có ảnh. */
+function sampleForCategory(category: Product["category"]): string {
+  const kind = categoryToKind(category);
+  const match = PRODUCT_SAMPLES.find((s) => s.kind === kind);
+  return (match ?? PRODUCT_SAMPLES[0]!).src;
+}
+
 function StudioSidebar() {
   const modelId = useStudioStore((s) => s.modelId);
   const setModel = useStudioStore((s) => s.setModel);
@@ -170,6 +202,7 @@ function StudioSidebar() {
   const addGarment = useStudioStore((s) => s.addGarment);
   const watermark = useStudioStore((s) => s.watermark);
   const setWatermark = useStudioStore((s) => s.setWatermark);
+  const catalogPriceVnd = useStudioStore((s) => s.catalogPriceVnd);
   const exportLook = useStudioStore((s) => s.exportLook);
   const isCompositing = useStudioStore((s) => s.isCompositing);
   const progress = useStudioStore((s) => s.progress);
@@ -180,6 +213,53 @@ function StudioSidebar() {
   const productFileRef = useRef<HTMLInputElement>(null);
   const [brandName, setBrandName] = useState(watermark.text || "Local brand");
   const [productName, setProductName] = useState("Sản phẩm mới");
+  const [catalogOpen, setCatalogOpen] = useState(false);
+
+  const catalogProducts = useProductCatalog((s) => s.products);
+  const hydrateCatalog = useProductCatalog((s) => s.hydrate);
+  const watermarkTouched = useStudioStore((s) => s.watermarkTouched);
+  const activeShopId = useShopClient((s) => s.activeShopId);
+  const [shops] = useState(() => loadShops());
+  const activeShop = shops.find((s) => s.id === activeShopId) ?? null;
+
+  useEffect(() => {
+    hydrateCatalog();
+  }, [hydrateCatalog]);
+
+  /** Sản phẩm trong catalog gắn với gian hàng đang chọn (nếu có). */
+  const catalogForShop = useMemo(() => {
+    if (!activeShop) return catalogProducts;
+    const inShop = catalogProducts.filter((p) => p.shopId === activeShop.id);
+    return inShop.length > 0 ? inShop : catalogProducts;
+  }, [catalogProducts, activeShop]);
+
+  async function pickCatalogProduct(p: Product) {
+    try {
+      setCatalogOpen(false);
+      const src = p.imageUrl || sampleForCategory(p.category);
+      const kind = categoryToKind(p.category);
+      // Reflect the pick immediately — background removal can take a while.
+      setProductName(p.name);
+      if (!watermarkTouched) {
+        const shop = shops.find((s) => s.id === p.shopId);
+        setWatermark(
+          { ...(shop ? { text: shop.name } : {}), subtext: p.name },
+          { touched: false },
+        );
+        if (shop) setBrandName(shop.name);
+      }
+      await addGarment({
+        src,
+        name: p.name,
+        kind,
+        priceVnd: p.price,
+        category: p.category,
+      });
+      toast.success(`Đã thêm ${p.name} từ catalog`);
+    } catch (e) {
+      toast.error((e as Error).message || "Không thêm được sản phẩm");
+    }
+  }
 
   const selected = garments.find((l) => l.id === selectedGarmentId) || null;
 
@@ -317,14 +397,72 @@ function StudioSidebar() {
           <h2 className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
             Mẫu sản phẩm
           </h2>
-          <Button
-            size="sm"
-            variant="ghost"
-            type="button"
-            onClick={() => productFileRef.current?.click()}
-          >
-            <Upload className="size-3.5" /> Tải lên
-          </Button>
+          <div className="flex items-center gap-1">
+            <Popover.Root open={catalogOpen} onOpenChange={setCatalogOpen}>
+              <Popover.Trigger asChild>
+                <Button size="sm" variant="ghost" type="button">
+                  <Package className="size-3.5" /> Từ catalog
+                </Button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  side="bottom"
+                  align="end"
+                  sideOffset={6}
+                  className="z-50 w-72 rounded-[var(--radius-lg)] border border-border bg-bg-elevated p-2 shadow-xl"
+                >
+                  <p className="px-2 pb-1 pt-1.5 text-xs font-medium text-fg-muted">
+                    {activeShop ? `Catalog · ${activeShop.name}` : "Catalog sản phẩm"}
+                  </p>
+                  {catalogForShop.length === 0 ? (
+                    <p className="px-2 py-3 text-xs text-fg-muted">
+                      Chưa có sản phẩm — thêm ở tab “Sản phẩm” trong Dashboard.
+                    </p>
+                  ) : (
+                    <ul className="max-h-64 space-y-0.5 overflow-y-auto">
+                      {catalogForShop.map((p) => (
+                        <li key={p.id}>
+                          <button
+                            type="button"
+                            onClick={() => void pickCatalogProduct(p)}
+                            className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left hover:bg-bg-subtle"
+                          >
+                            {p.imageUrl ? (
+                              <img
+                                src={p.imageUrl}
+                                alt=""
+                                className="size-9 rounded-[var(--radius-sm)] border border-border object-cover"
+                              />
+                            ) : (
+                              <span className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] border border-border text-fg-subtle">
+                                <Package className="size-4" />
+                              </span>
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs font-medium">
+                                {p.name}
+                              </span>
+                              <span className="block text-[10px] text-fg-muted">
+                                {p.category} · {formatPrice(p.price)}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              onClick={() => productFileRef.current?.click()}
+            >
+              <Upload className="size-3.5" /> Tải lên
+            </Button>
+          </div>
           <input
             ref={productFileRef}
             type="file"
@@ -484,6 +622,7 @@ function StudioSidebar() {
         productName={productName}
         brand={brandName}
         scene={VN_SCENES.find((s) => s.id === sceneId)?.name}
+        price={catalogPriceVnd !== null ? formatPrice(catalogPriceVnd) : undefined}
         compact
       />
     </div>
@@ -859,8 +998,13 @@ function PromptsAiTab() {
   const sceneId = useStudioStore((s) => s.sceneId);
   const watermark = useStudioStore((s) => s.watermark);
   const garments = useStudioStore((s) => s.garments);
+  const storeProductName = useStudioStore((s) => s.productName);
+  const catalogPriceVnd = useStudioStore((s) => s.catalogPriceVnd);
+  const catalogCategory = useStudioStore((s) => s.catalogCategory);
   const scene = VN_SCENES.find((s) => s.id === sceneId);
-  const productName = garments[0]?.name || "Sản phẩm local brand";
+  const productName = storeProductName || garments[0]?.name || "Sản phẩm local brand";
+  const priceLabel =
+    catalogPriceVnd !== null ? formatPrice(catalogPriceVnd) : undefined;
 
   return (
     <main className="mx-auto grid w-full max-w-5xl flex-1 gap-4 p-4 lg:grid-cols-2 sm:p-6">
@@ -900,11 +1044,14 @@ function PromptsAiTab() {
           productName={productName}
           brand={watermark.text || "Local brand"}
           scene={scene?.name}
+          price={priceLabel}
         />
         <TikTokSeoPanel
           productName={productName}
           brand={watermark.text || "Local brand"}
           scene={scene?.name}
+          price={priceLabel}
+          category={catalogCategory ?? undefined}
           compact={false}
         />
       </div>
